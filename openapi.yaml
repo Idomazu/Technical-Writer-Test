@@ -1,0 +1,225 @@
+openapi: 3.0.0
+
+info:
+  title: Service Plans API
+  version: 1.0.0
+  description: |
+    The Service Plans API allows users to manage and configure service plans for different providers. 
+    It provides endpoints for retrieving user information, managing partners, and creating, updating, or deleting plans. 
+    This API is essential for handling user subscriptions, enforcing provider-specific plan limitations, and ensuring 
+    smooth transitions between user statuses. 
+
+    ### Key Features:
+    - 🔹 **User Management**: Retrieve and update user information, including subscription statuses.
+    - 🔹 **Service Plan Management**: Create, update, and delete plans for different providers.
+    - 🔹 **Authentication**: Basic authentication is required for modifying plans.
+    - 🔹 **Pagination Support**: Allows querying large datasets efficiently.
+
+paths:
+  /api/external/user:
+    get:
+      summary: Retrieve user information
+      description: |
+        This endpoint returns user details, including their type, provider ID, and subscription status. 
+        It supports filtering by user ID, provider, and time range.
+      parameters:
+        - name: user_id
+          in: query
+          description: Unique user identifier
+          required: false
+          schema:
+            type: string
+            example: "3453255"
+        - name: from
+          in: query
+          description: Pagination start timestamp (Unix format)
+          required: false
+          schema:
+            type: integer
+            example: 1625097600
+        - name: to
+          in: query
+          description: Pagination end timestamp (Unix format)
+          required: false
+          schema:
+            type: integer
+            example: 1625184000
+        - name: limit
+          in: query
+          description: Number of records to return (default: 1000)
+          required: false
+          schema:
+            type: integer
+            default: 1000
+            example: 100
+        - name: provider_id
+          in: query
+          description: Unique partner identifier
+          required: false
+          schema:
+            type: string
+            example: "2323"
+      responses:
+        '200':
+          description: Successful response with user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    example: "3453255"
+                  provider_id:
+                    type: string
+                    example: "2323"
+                  status:
+                    type: string
+                    enum: [active, inactive, idle]
+                    example: "active"
+                  type:
+                    type: string
+                    enum: [basic, guest, company, advanced, admin]
+                    example: "basic"
+                  sub_status:
+                    type: string
+                    enum: [signed, unsigned, absent]
+                    example: "signed"
+                  zone:
+                    type: string
+                    example: "us"
+        '401':
+          description: Unauthorized - Invalid credentials
+        '404':
+          description: User not found
+
+  /api/partner:
+    get:
+      summary: Retrieve partner information
+      description: |
+        This endpoint allows querying partner details by provider ID and operational status.
+      parameters:
+        - name: provider_id
+          in: query
+          description: Unique partner identifier
+          required: true
+          schema:
+            type: string
+            example: "2323"
+        - name: status
+          in: query
+          description: Partner operational state
+          required: false
+          schema:
+            type: string
+            enum: [active, stopped]
+            example: "active"
+      responses:
+        '200':
+          description: Successful response with partner data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider_id:
+                    type: string
+                    example: "2323"
+                  status:
+                    type: string
+                    enum: [active, stopped]
+                    example: "active"
+        '401':
+          description: Unauthorized - Invalid credentials
+        '404':
+          description: Partner not found
+
+  /api/external/plans:
+    post:
+      summary: Create a new service plan
+      description: |
+        Creates a new service plan for a provider. Basic authentication is required.
+      security:
+        - basicAuth: []
+      requestBody:
+        description: Plan creation data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_name:
+                  type: string
+                  example: "Premium Plan"
+                provider_id:
+                  type: string
+                  example: "2323"
+                type:
+                  type: string
+                  enum: [basic, company, advanced]
+                  example: "basic"
+      responses:
+        '201':
+          description: Plan created successfully
+        '400':
+          description: Bad request - Invalid plan data
+        '401':
+          description: Unauthorized - Invalid credentials
+
+    put:
+      summary: Update an existing service plan
+      description: |
+        Updates an existing service plan. Requires authentication.
+      security:
+        - basicAuth: []
+      requestBody:
+        description: Plan update data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_name:
+                  type: string
+                  example: "Premium Plan Updated"
+                provider_id:
+                  type: string
+                  example: "2323"
+                type:
+                  type: string
+                  enum: [basic, company, advanced]
+                  example: "advanced"
+      responses:
+        '200':
+          description: Plan updated successfully
+        '400':
+          description: Bad request - Invalid plan data
+        '401':
+          description: Unauthorized - Invalid credentials
+
+    delete:
+      summary: Delete a service plan
+      description: |
+        Deletes an existing service plan. The plan ID must be specified.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: plan_id
+          in: query
+          description: Unique plan identifier
+          required: true
+          schema:
+            type: string
+            example: "plan12345"
+      responses:
+        '204':
+          description: Plan deleted successfully
+        '404':
+          description: Plan not found
+        '401':
+          description: Unauthorized - Invalid credentials
+
+securitySchemes:
+  basicAuth:
+    type: http
+    scheme: basic
